@@ -15,12 +15,29 @@ app.configure(function(){
 	app.use(express.errorHandler({dumpExceptions:true,showStack:true}));
 });
 
+var res;
+
 app.get('/',function(req,res){
+	var realpath=__dirname+'\\tmp\\';
+	rest=[];
+	fs.readdir(realpath,function(err,files){
+		files.forEach(function(file){
+			fs.stat(realpath+file,function(err,stat){
+				rest.push({
+					name:file,
+					size:stat.size,
+					url:url.parse(file).pathname,
+					delete_url:url.parse("delete.cpp/"+encodeURIComponent(file)).pathname,
+					delete_type:"GET"
+				});
+			});
+		});	
+	});
 	res.writeHead(200, {'content-type': 'text/html'});
     /*res.end(
 	'<head>'+
     '<meta http-equiv="Content-Type" content="text/html; '+
-    'charset=UTF-8" />'+
+    'chtarset=UTF-8" />'+
     '</head>'+  
       '<form action="/upload" enctype="multipart/form-data" method="post">'+
       '<input type="text" name="title"><br>'+
@@ -28,18 +45,24 @@ app.get('/',function(req,res){
       '<input type="submit" value="Upload">'+
       '</form>'
     );*/
-	var realpath=__dirname+url.parse('\\upload.html').pathname;
-	var txt=fs.readFileSync(realpath);
-	res.end(txt);
+	var realpath2=__dirname+url.parse('\\upload.html').pathname;
+	var txt=fs.readFileSync(realpath2);
+	res.end(txt);	
+});
+
+app.get('/upload',function(req,res){
+	res.send(rest);
 });
 
 TEST_PORT=8000;
 TEST_TMP=__dirname+'\\'+'tmp';
 app.get('/delete.cpp/:name',function(req,res){
+try{
 	fs.unlinkSync(TEST_TMP+'\\'+req.params.name,function(err){
 		if(err)console.log("fail to del"+req.params);
 		else console.log("success to del"+req.params);
 	});
+}catch(err){}
 });
 app.post('/upload',function(req,res){
 	var form = new formidable.IncomingForm();
