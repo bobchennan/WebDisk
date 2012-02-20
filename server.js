@@ -15,7 +15,7 @@ app.configure(function(){
 	app.use(express.errorHandler({dumpExceptions:true,showStack:true}));
 });
 
-var res;
+var rest;
 
 app.get('/',function(req,res){
 	var realpath=__dirname+'\\tmp\\';
@@ -50,7 +50,7 @@ app.get('/',function(req,res){
 	res.end(txt);	
 });
 
-app.get('/upload',function(req,res){
+app.get('/upload.node',function(req,res){
 	res.send(rest);
 });
 
@@ -64,7 +64,7 @@ try{
 	});
 }catch(err){}
 });
-app.post('/upload',function(req,res){
+app.post('/upload.node',function(req,res){
 	var form = new formidable.IncomingForm();
 	var res_obj=[],files=[];
 	
