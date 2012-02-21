@@ -3,7 +3,35 @@ var formidable=require('formidable'),
 	express=require('express'),
 	url=require('url'),
 	fs=require('fs'),
-	app=express.createServer();
+	app=express.createServer(),
+	crypto=require('crypto'),
+	db=require("mysql-native").createTCPClient('127.0.0.1');
+
+db.auto_prepare=true;
+var auth=db.auth('','root');
+var DATABASE_NAME="OJ";
+db.query('use '+DATABASE_NAME);
+
+function generator_str(bits) { 
+  var chars, rand, i, ret; 
+  chars = 
+'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'; 
+  ret = ''; 
+  // in v8, Math.random() yields 32 pseudo-random bits (in spidermonkey it gives 53) 
+  while (bits > 0) { 
+    // 32-bit integer 
+    rand = Math.floor(Math.random() * 0x100000000); 
+    // base 64 means 6 bits per character, so we use the top 30 bits from rand to give 30/6=5 characters. 
+    for (i = 26; i > 0 && bits > 0; i -= 6, bits -= 6) { 
+      ret += chars[0x3F & rand >>> i]; 
+    } 
+  }
+  return ret;
+}
+function hashname(s){
+	s=encodeURIComponent(s+generator_str(10));
+	return crypto.createHash('md5').update(s).digest("hex");
+}
 
 app.configure(function(){
 	app.use(express.bodyParser());
@@ -23,12 +51,15 @@ app.get('/',function(req,res){
 	fs.readdir(realpath,function(err,files){
 		files.forEach(function(file){
 			fs.stat(realpath+file,function(err,stat){
+				db.query("SELECT * from hash_files WHERE hashcode='"+file+"';")
+				.on("row",function(r){
 				rest.push({
-					name:file,
+					name:decodeURIComponent(r['file']),
 					size:stat.size,
-					url:url.parse(file).pathname,
-					delete_url:url.parse("delete.cpp/"+encodeURIComponent(file)).pathname,
+					url:url.parse('file/'+file).pathname,
+					delete_url:url.parse("delete.node/"+file).pathname,
 					delete_type:"GET"
+				});
 				});
 			});
 		});	
@@ -56,13 +87,19 @@ app.get('/upload.node',function(req,res){
 
 TEST_PORT=8000;
 TEST_TMP=__dirname+'\\'+'tmp';
-app.get('/delete.cpp/:name',function(req,res){
+app.get('/delete.node/:name',function(req,res){
 try{
-	fs.unlinkSync(TEST_TMP+'\\'+req.params.name,function(err){
-		if(err)console.log("fail to del"+req.params);
-		else console.log("success to del"+req.params);
+	var file=req.params.name;
+	db.query("DELETE from hash_files WHERE hashcode='"+file+"';");
+	fs.unlinkSync(TEST_TMP+'\\'+file,function(err){
+		if(err)console.log("fail to del"+file);
+		else console.log("success to del"+file);
 	});
 }catch(err){}
+});
+app.post('/login.node',function(req,res){
+	res.write('user: '+req.body.user);
+	res.end('pass: '+req.body.pass);
 });
 app.post('/upload.node',function(req,res){
 	var form = new formidable.IncomingForm();
@@ -85,18 +122,21 @@ app.post('/upload.node',function(req,res){
 		});
 	  })
 	  .on('fileBegin',function(field,file){
-		file.path=TEST_TMP+"\\"+file.name;
-		files.push(TEST_TMP+"\\"+file.name);
-	  })
-      .on('file', function(field, file) {
+		var s=file.name;
+		var ss=hashname(s);
+		file.path=TEST_TMP+"\\"+ss;
+		files.push(TEST_TMP+"\\"+ss);
+		db.query("INSERT INTO hash_files (file,hashcode) VALUES('"+encodeURIComponent(s)+"','"+ss+"')");
 		res_obj.push({
 			name:file.name,
 			size:file.size,
-			url:url.parse(file.name).pathname,
-			delete_url:url.parse("delete.cpp/"+encodeURIComponent(file.name)).pathname,
+			url:url.parse('file/'+ss).pathname,
+			delete_url:url.parse("delete.node/"+ss).pathname,
 			delete_type:"GET"
 			//thumbnail_url:url.parse("cnx.png").pathname
 		})
+	  })
+      .on('file', function(field, file) {
       })
 	  .on('progress',function(receive,expect){
 		  //console.log(receive/expect);
