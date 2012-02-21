@@ -97,6 +97,34 @@ try{
 	});
 }catch(err){}
 });
+app.get('/file/:name',function(req,res){
+	var name=req.params.name;
+	var s=TEST_TMP+'\\'+name;
+	var stats=fs.lstatSync(s);
+	if(stats.isFile()){
+		db.query("SELECT * from hash_files WHERE hashcode='"+name+"';").on("row",function(r){
+			fs.readFile(s,"binary",function(err,file){
+				res.writeHead(200,{
+					"Content-Type":"application/octet-stream;charset=utf-8",
+					"Content-Length":stats.size,
+					"Content-Disposition":"attachment;filename="+r['file']
+				});
+				res.write(file,"binary");
+				res.end();
+			})
+		})
+	}
+	else{
+		var body="文件不存在:-(";
+		res.writeHead(404,{
+			"Content-Type":"text/html;charset=utf-8",
+			"Content-Length":Buffer.byteLength(body,'utf8'),
+			"Server":"NodeJs("+process.version+")"
+		});
+		res.write(body);
+		res.end();
+	}
+});
 app.post('/login.node',function(req,res){
 	res.write('user: '+req.body.user);
 	res.end('pass: '+req.body.pass);
@@ -126,6 +154,10 @@ app.post('/upload.node',function(req,res){
 		var ss=hashname(s);
 		file.path=TEST_TMP+"\\"+ss;
 		files.push(TEST_TMP+"\\"+ss);
+	  })
+      .on('file', function(field, file) {
+		var s=file.name;
+		var ss=file.path.substr((TEST_TMP+"\\").length);
 		db.query("INSERT INTO hash_files (file,hashcode) VALUES('"+encodeURIComponent(s)+"','"+ss+"')");
 		res_obj.push({
 			name:file.name,
@@ -135,8 +167,6 @@ app.post('/upload.node',function(req,res){
 			delete_type:"GET"
 			//thumbnail_url:url.parse("cnx.png").pathname
 		})
-	  })
-      .on('file', function(field, file) {
       })
 	  .on('progress',function(receive,expect){
 		  //console.log(receive/expect);
