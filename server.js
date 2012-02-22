@@ -12,6 +12,9 @@ var auth=db.auth('','root');
 var DATABASE_NAME="OJ";
 db.query('use '+DATABASE_NAME);
 
+TEST_TMP=__dirname+'/'+'tmp';
+TEST_PORT=8888;
+
 function generator_str(bits) { 
   var chars, rand, i, ret; 
   chars = 
@@ -36,34 +39,28 @@ function hashname(s){
 app.configure(function(){
 	app.use(express.bodyParser());
 	app.use(express.methodOverride());
-	app.use(app.router);
-	app.set('views', __dirname);
+	app.set('views', __dirname + '/views');
 	app.set('view engine', 'jade');
-	app.use(express.static(__dirname));
-	app.use(express.errorHandler({dumpExceptions:true,showStack:true}));
+	app.use(express.static(__dirname+'/public'));
+	app.use(app.router);
+	app.use(express.errorHandler({dumpExceptions:false,showStack:false}));
 });
 
 var rest;
 
 app.get('/',function(req,res){
-	var realpath=__dirname+'\\tmp\\';
+	var realpath=__dirname+'/tmp/';
 	rest=[];
-	fs.readdir(realpath,function(err,files){
-		files.forEach(function(file){
-			fs.stat(realpath+file,function(err,stat){
-				db.query("SELECT * from hash_files WHERE hashcode='"+file+"';")
-				.on("row",function(r){
-				rest.push({
-					name:decodeURIComponent(r['file']),
-					size:stat.size,
-					url:url.parse('file/'+file).pathname,
-					delete_url:url.parse("delete.node/"+file).pathname,
-					delete_type:"GET"
-				});
-				});
+	db.query("SELECT * from hash_files;")
+		.on("row",function(r){
+			rest.push({
+				name:decodeURIComponent(r['file']),
+				size:r['size'],
+				url:url.parse('file/'+r['hashcode']).pathname,
+				delete_url:url.parse("delete.node/"+r['hashcode']).pathname,
+				delete_type:"GET"
 			});
-		});	
-	});
+		});
 	res.writeHead(200, {'content-type': 'text/html'});
     /*res.end(
 	'<head>'+
@@ -76,7 +73,7 @@ app.get('/',function(req,res){
       '<input type="submit" value="Upload">'+
       '</form>'
     );*/
-	var realpath2=__dirname+url.parse('\\upload.html').pathname;
+	var realpath2=__dirname+url.parse('/views/upload.html').pathname;
 	var txt=fs.readFileSync(realpath2);
 	res.end(txt);	
 });
@@ -85,21 +82,19 @@ app.get('/upload.node',function(req,res){
 	res.send(rest);
 });
 
-TEST_PORT=8000;
-TEST_TMP=__dirname+'\\'+'tmp';
 app.get('/delete.node/:name',function(req,res){
 try{
 	var file=req.params.name;
 	db.query("DELETE from hash_files WHERE hashcode='"+file+"';");
-	fs.unlinkSync(TEST_TMP+'\\'+file,function(err){
+	fs.unlinkSync(TEST_TMP+'/'+file,function(err){
 		if(err)console.log("fail to del"+file);
 		else console.log("success to del"+file);
 	});
 }catch(err){}
 });
-app.get('/file/:name',function(req,res){
+app.get('/file/:name',function(req,res,next){
 	var name=req.params.name;
-	var s=TEST_TMP+'\\'+name;
+	var s=TEST_TMP+'/'+name;
 	var stats=fs.lstatSync(s);
 	if(stats.isFile()){
 		db.query("SELECT * from hash_files WHERE hashcode='"+name+"';").on("row",function(r){
@@ -115,14 +110,7 @@ app.get('/file/:name',function(req,res){
 		})
 	}
 	else{
-		var body="文件不存在:-(";
-		res.writeHead(404,{
-			"Content-Type":"text/html;charset=utf-8",
-			"Content-Length":Buffer.byteLength(body,'utf8'),
-			"Server":"NodeJs("+process.version+")"
-		});
-		res.write(body);
-		res.end();
+		next();
 	}
 });
 app.post('/login.node',function(req,res){
@@ -152,13 +140,13 @@ app.post('/upload.node',function(req,res){
 	  .on('fileBegin',function(field,file){
 		var s=file.name;
 		var ss=hashname(s);
-		file.path=TEST_TMP+"\\"+ss;
-		files.push(TEST_TMP+"\\"+ss);
+		file.path=TEST_TMP+"/"+ss;
+		files.push(TEST_TMP+"/"+ss);
 	  })
       .on('file', function(field, file) {
 		var s=file.name;
-		var ss=file.path.substr((TEST_TMP+"\\").length);
-		db.query("INSERT INTO hash_files (file,hashcode) VALUES('"+encodeURIComponent(s)+"','"+ss+"')");
+		var ss=file.path.substr((TEST_TMP+"/").length);
+		db.query("INSERT INTO hash_files (file,hashcode,size) VALUES('"+encodeURIComponent(s)+"','"+ss+"',"+file.size+")");
 		res_obj.push({
 			name:file.name,
 			size:file.size,
@@ -177,6 +165,16 @@ app.post('/upload.node',function(req,res){
 	  form.parse(req,function(err,fields,files){
 	  });
 });
+app.get('*',function(req,res){
+		var body="页面不存在:-(";
+		res.writeHead(404,{
+			"Content-Type":"text/html;charset=utf-8",
+			"Content-Length":Buffer.byteLength(body,'utf8'),
+			"Server":"NodeJs("+process.version+")"
+		});
+		res.write(body);
+		res.end();
+});
 
-app.listen(8000);
+app.listen(TEST_PORT);
 console.log('listening on http://localhost:'+TEST_PORT+'/');
