@@ -123,7 +123,7 @@ head
           i.icon-download
           | Download
     script#template-upload(type='text/x-tmpl')
-      {% for (var i=0, files=o.files, l=files.length, file=files[0]; i<l; file=files[++i]) { %}
+      {% for (var i=0, file; file=o.files[i]; ++i) { %}
       <tr class="template-upload fade">
       <td class="preview"><span class="fade"></span></td>
       <td class="name">{%=file.name%}</td>
@@ -150,7 +150,7 @@ head
       </tr>
       {% } %}
     script#template-download(type='text/x-tmpl')
-      {% for (var i=0, files=o.files, l=files.length, file=files[0]; i<l; file=files[++i]) { %}
+      {% for (var i=0, file; file=o.files[i]; ++i) { %}
       <tr class="template-download fade">
       {% if (file.error) { %}
       <td></td>

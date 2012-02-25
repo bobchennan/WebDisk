@@ -51,15 +51,6 @@ $(function () {
         }
     } else {
         // Load existing files:
-        /*var jqXHR = $('#fileupload').fileupload('send', {files: filesList})
-            .error(function (jqXHR, textStatus, errorThrown) {
-                if (errorThrown === 'abort') {
-                    alert('File Upload has been canceled');
-                }
-        });
-        $('button.cancel').click(function (e) {
-                jqXHR.abort();
-        });*/
         $('#fileupload').each(function () {
             var that = this;
             $.getJSON(this.action, function (result) {
