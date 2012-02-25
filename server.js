@@ -43,13 +43,19 @@ app.configure(function(){
 	app.set('view engine', 'jade');
 	app.use(express.static(__dirname+'/public'));
 	app.use(app.router);
-	app.use(express.errorHandler({dumpExceptions:false,showStack:false}));
+	app.use(express.errorHandler({dumpExceptions:true,showStack:true}));
 });
 
-var rest;
-
 app.get('/',function(req,res){
-	var realpath=__dirname+'/tmp/';
+    res.render('upload.jade');
+	/*var realpath=__dirname+'/tmp/';
+	res.writeHead(200, {'content-type': 'text/html'});
+	var realpath2=__dirname+url.parse('/views/upload.html').pathname;
+	var txt=fs.readFileSync(realpath2);
+	res.end(txt);*/	
+});
+
+app.get('/upload.node',function(req,res){
 	rest=[];
 	db.query("SELECT * from hash_files;")
 		.on("row",function(r){
@@ -60,26 +66,10 @@ app.get('/',function(req,res){
 				delete_url:url.parse("delete.node/"+r['hashcode']).pathname,
 				delete_type:"GET"
 			});
-		});
-	res.writeHead(200, {'content-type': 'text/html'});
-    /*res.end(
-	'<head>'+
-    '<meta http-equiv="Content-Type" content="text/html; '+
-    'chtarset=UTF-8" />'+
-    '</head>'+  
-      '<form action="/upload" enctype="multipart/form-data" method="post">'+
-      '<input type="text" name="title"><br>'+
-      '<input type="file" name="upload" multiple="multiple"><br>'+
-      '<input type="submit" value="Upload">'+
-      '</form>'
-    );*/
-	var realpath2=__dirname+url.parse('/views/upload.html').pathname;
-	var txt=fs.readFileSync(realpath2);
-	res.end(txt);	
-});
-
-app.get('/upload.node',function(req,res){
-	res.send(rest);
+		})
+        .on("end",function(r){
+            res.send(rest);
+        });
 });
 
 app.get('/delete.node/:name',function(req,res){
@@ -98,7 +88,11 @@ app.get('/file/:name',function(req,res,next){
 	var stats=fs.lstatSync(s);
 	if(stats.isFile()){
 		db.query("SELECT * from hash_files WHERE hashcode='"+name+"';").on("row",function(r){
-			fs.readFile(s,"binary",function(err,file){
+			res.header('Content-Type',"application/octet-stream;charset=utf-8");
+            res.header('Content-Length',stats.size);
+            res.header('Content-Disposition',"attachment;filename="+r['file']);
+            res.sendfile(s);
+            /*fs.readFile(s,"binary",function(err,file){
 				res.writeHead(200,{
 					"Content-Type":"application/octet-stream;charset=utf-8",
 					"Content-Length":stats.size,
@@ -106,16 +100,41 @@ app.get('/file/:name',function(req,res,next){
 				});
 				res.write(file,"binary");
 				res.end();
-			})
+			})*/
 		})
 	}
 	else{
 		next();
 	}
 });
-app.post('/login.node',function(req,res){
-	res.write('user: '+req.body.user);
-	res.end('pass: '+req.body.pass);
+app.post('/login.node',function(req,res,next){
+	var p_user=req.body.user;
+    var p_pass=req.body.pass;
+    var result=db.query("SELECT * from users WHERE name='"+p_user+"';");
+    var cnt=0;
+    result.on('row',function(r){
+        ++cnt;
+        var iter=r['iter'];
+        var salt=r['salt'];
+        for(var i=0;i<iter;i++){
+            p_pass+=salt;
+            p_pass=crypto.createHash("md5").update(p_pass).digest("hex");
+        }
+        if(p_pass==r['pass']){
+            console.log("login success");
+            next();
+        }
+        else{
+            res.writeHead(200,{"Content-Type":"text/html"});
+            res.end("no this user or wrong password");
+        }
+    });
+    result.on('end',function(){
+        if(!cnt){
+            res.writeHead(200,{"Content-Type":"text/html"});
+            res.end("no this user or wrong password");
+        }
+    });
 });
 app.post('/upload.node',function(req,res){
 	var form = new formidable.IncomingForm();
