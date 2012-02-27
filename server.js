@@ -38,6 +38,10 @@ function hashname(s){
 
 app.configure(function(){
 	app.use(express.bodyParser());
+    app.use(express.cookieParser());
+    app.use(express.session({
+        secret:'cnx'
+    }));
 	app.use(express.methodOverride());
 	app.set('views', __dirname + '/views');
 	app.set('view engine', 'jade');
@@ -47,7 +51,8 @@ app.configure(function(){
 });
 
 app.get('/',function(req,res){
-    res.render('upload.jade');
+    //console.log(req.session.user);
+    res.render('upload.jade',{name:req.session.user});
 	/*var realpath=__dirname+'/tmp/';
 	res.writeHead(200, {'content-type': 'text/html'});
 	var realpath2=__dirname+url.parse('/views/upload.html').pathname;
@@ -122,6 +127,7 @@ app.post('/login.node',function(req,res,next){
         }
         if(p_pass==r['pass']){
             console.log("login success");
+            req.session.user=p_user;
             next();
         }
         else{
