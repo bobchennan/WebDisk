@@ -49,6 +49,8 @@ head
               li.slide
                 a#login(href='#') 登录
               li
+                a#logout(href='logout.node',style='display:none;') 注销
+              li
                 a(href='mailto:bobchennan@gmail.com') 联系开发者
     style
       #login-content{ border:1px solid #d3d3d3; padding:5px; background:#fff; width:220px; height:220px; }
@@ -105,6 +107,7 @@ head
         ul
           li Chrome、Firefox、Safari支持拖动
           li 登录窗口esc关闭
+          li 未登录无法使用首页任何功能
     #modal-gallery.modal.modal-gallery.hide.fade
       .modal-header
         a.close(data-dismiss='modal') ×

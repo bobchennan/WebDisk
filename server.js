@@ -61,13 +61,14 @@ app.get('/',function(req,res){
 });
 
 app.get('/upload.node',function(req,res){
-	rest=[];
-	db.query("SELECT * from hash_files;")
+    if(!req.session.user)return [];
+    rest=[];
+	db.query("SELECT * from hash_files where user='"+encodeURIComponent(req.session.user)+"';")
 		.on("row",function(r){
 			rest.push({
 				name:decodeURIComponent(r['file']),
 				size:r['size'],
-				url:url.parse('file/'+r['hashcode']).pathname,
+				url:url.parse('file.node/'+r['hashcode']).pathname,
 				delete_url:url.parse("delete.node/"+r['hashcode']).pathname,
 				delete_type:"GET"
 			});
@@ -77,18 +78,32 @@ app.get('/upload.node',function(req,res){
         });
 });
 
+app.get('/manage.node/:name',function(req,res){
+    var name=req.params.name;
+	var s=TEST_TMP+'/'+name;
+    var stats=fs.lstatSync(s);
+	if(stats.isFile()){
+	    res.render('manage.jade',{name:req.params.name});//,{link:url.parse('file.node/'+req.params.name)});
+	}
+});
+
 app.get('/delete.node/:name',function(req,res){
 try{
-	var file=req.params.name;
-	db.query("DELETE from hash_files WHERE hashcode='"+file+"';");
-	fs.unlinkSync(TEST_TMP+'/'+file,function(err){
-		if(err)console.log("fail to del"+file);
-		else console.log("success to del"+file);
-	});
+	var name=req.params.name;
+	var s=TEST_TMP+'/'+name;
+	var stats=fs.lstatSync(s);
+	if(stats.isFile()){
+	    var file=req.params.name;
+	    db.query("DELETE from hash_files WHERE hashcode='"+file+"';");
+	    fs.unlinkSync(TEST_TMP+'/'+file,function(err){
+		    if(err)console.log("fail to del"+file);
+		    else console.log("success to del"+file);
+	    });
+	}
 }catch(err){}
 });
-app.get('/file/:name',function(req,res,next){
-	var name=req.params.name;
+app.get('/file.node/:name',function(req,res,next){
+    var name=req.params.name;
 	var s=TEST_TMP+'/'+name;
 	var stats=fs.lstatSync(s);
 	if(stats.isFile()){
@@ -112,6 +127,10 @@ app.get('/file/:name',function(req,res,next){
 		next();
 	}
 });
+app.get('/logout.node',function(req,res,next){
+    req.session.destroy();
+    res.redirect('/');
+});
 app.post('/login.node',function(req,res,next){
 	var p_user=req.body.user;
     var p_pass=req.body.pass;
@@ -126,23 +145,26 @@ app.post('/login.node',function(req,res,next){
             p_pass=crypto.createHash("md5").update(p_pass).digest("hex");
         }
         if(p_pass==r['pass']){
-            console.log("login success");
             req.session.user=p_user;
-            next();
+            res.end('<SCRIPT LANGUAGE="JavaScript">alert("Login successful!");setTimeout("window.opener=null;window.location.href=\'/\'",1000);</SCRIPT>');
         }
         else{
             res.writeHead(200,{"Content-Type":"text/html"});
-            res.end("no this user or wrong password");
+            res.end('<SCRIPT LANGUAGE="JavaScript">alert("no this user or wrong password");setTimeout("window.opener=null;window.location.href=\'/\'",1000);</SCRIPT>');
         }
     });
     result.on('end',function(){
         if(!cnt){
             res.writeHead(200,{"Content-Type":"text/html"});
-            res.end("no this user or wrong password");
+			res.end('<SCRIPT LANGUAGE="JavaScript">alert("no this user or wrong password");setTimeout("window.opener=null;window.location.href=\'/\'",3000);</SCRIPT>');
         }
     });
 });
 app.post('/upload.node',function(req,res){
+    if(!(req.session.user)){
+        res.end("404");
+        return;
+    }
 	var form = new formidable.IncomingForm();
 	var res_obj=[],files=[];
 	
@@ -171,11 +193,11 @@ app.post('/upload.node',function(req,res){
       .on('file', function(field, file) {
 		var s=file.name;
 		var ss=file.path.substr((TEST_TMP+"/").length);
-		db.query("INSERT INTO hash_files (file,hashcode,size) VALUES('"+encodeURIComponent(s)+"','"+ss+"',"+file.size+")");
+		db.query("INSERT INTO hash_files (file,hashcode,size,user) VALUES('"+encodeURIComponent(s)+"','"+ss+"',"+file.size+",'"+encodeURIComponent(req.session.user)+"')");
 		res_obj.push({
 			name:file.name,
 			size:file.size,
-			url:url.parse('file/'+ss).pathname,
+			url:url.parse('file.node/'+ss).pathname,
 			delete_url:url.parse("delete.node/"+ss).pathname,
 			delete_type:"GET"
 			//thumbnail_url:url.parse("cnx.png").pathname
