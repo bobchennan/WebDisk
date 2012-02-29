@@ -31,7 +31,6 @@ head
     script(src='js/easydialog.min.js')
     script(type="text/javascript")
       var userName = '#{name}';
-    script(src='js/login.js')
   body
     .navbar.navbar-fixed-top
       .navbar-inner
@@ -75,7 +74,7 @@ head
       })
     .container
       .page-header
-        h1 公共网络硬盘
+        h1 网络硬盘
       form#fileupload(action='upload.node', method='POST', enctype='multipart/form-data')
         .row.fileupload-buttonbar
           .span7
@@ -181,6 +180,7 @@ head
       </tr>
       {% } %}
     //
+    script(src='js/login.js')
        The jQuery UI widget factory, can be omitted if jQuery UI is already included 
     script(src='js/vendor/jquery.ui.widget.js')
     //

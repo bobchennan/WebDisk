@@ -61,8 +61,9 @@ app.get('/',function(req,res){
 });
 
 app.get('/upload.node',function(req,res){
+    if(!req.session.user)return [];
     rest=[];
-	db.query("SELECT * from hash_files where user="+decodeURIComponent(req.session.name)+";")
+	db.query("SELECT * from hash_files where user='"+encodeURIComponent(req.session.user)+"';")
 		.on("row",function(r){
 			rest.push({
 				name:decodeURIComponent(r['file']),
@@ -102,7 +103,6 @@ try{
 }catch(err){}
 });
 app.get('/file.node/:name',function(req,res,next){
-	console.log("cnx");
     var name=req.params.name;
 	var s=TEST_TMP+'/'+name;
 	var stats=fs.lstatSync(s);
@@ -193,7 +193,7 @@ app.post('/upload.node',function(req,res){
       .on('file', function(field, file) {
 		var s=file.name;
 		var ss=file.path.substr((TEST_TMP+"/").length);
-		db.query("INSERT INTO hash_files (file,hashcode,size) VALUES('"+encodeURIComponent(s)+"','"+ss+"',"+file.size+",'"+decodeURIComponent(req.session.user)+"')");
+		db.query("INSERT INTO hash_files (file,hashcode,size,user) VALUES('"+encodeURIComponent(s)+"','"+ss+"',"+file.size+",'"+encodeURIComponent(req.session.user)+"')");
 		res_obj.push({
 			name:file.name,
 			size:file.size,
