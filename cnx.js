@@ -71,7 +71,7 @@ app.get('/delete.node/:name',function(req,res){
     var user=req.session.user;
 	var name=req.params.name;
 	db.query("use "+config.dbNameofApp);
-	db.query("SELECT * from hash_files where hashcode='"+name+"';")
+    db.query("SELECT * from hash_files where hashcode='"+name+"';")
 	    .on("row",function(r){
 	        if(r['user']==user){
 	            db.query("use "+config.dbNameofApp);
@@ -169,8 +169,8 @@ app.post('/upload.node',function(req,res){
 	  .on('fileBegin',function(field,file){
 		var s=file.name;
 		var ss=hashname(s);
-		file.path=config.uploadDir+"/"+ss;
-		files.push(config.uploadDir+"/"+ss);
+		file.path=config.uploadDir+ss;
+		files.push(config.uploadDir+ss);
 	  })
       .on('file', function(field, file) {
 		var s=file.name;
