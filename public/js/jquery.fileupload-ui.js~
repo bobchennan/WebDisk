@@ -48,7 +48,7 @@
             // The maximum allowed file size:
             maxFileSize: undefined,
             // The minimum allowed file size:
-            minFileSize: 1,
+            minFileSize: undefined,
             // The regular expression for allowed file types, matches
             // against either file type or file name:
             acceptFileTypes:  /.+$/i,
