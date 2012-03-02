@@ -2,11 +2,23 @@ var formidable=require('formidable'),
     util=require('util'),
 	express=require('express'),
 	url=require('url'),
+    winston=require('winston'),
 	fs=require('fs'),
 	app=express.createServer(),
 	crypto=require('crypto'),
 	config=require('./config'),
 	db=require("mysql-native").createTCPClient(config.dbIP);
+
+var logger=new (winston.Logger)({
+    transports:[
+        new(winston.transports.Console)(),
+        new(winston.transports.File)({
+            filename:config.logFile,
+            handleExceptions:true
+        })
+    ]
+});
+logger.info("begin to watch");
 
 db.auto_prepare=true;
 db.auth(config.dbPass,config.dbUser);
@@ -77,7 +89,7 @@ app.get('/delete.node/:name',function(req,res){
 	            db.query("use "+config.dbNameofApp);
 	            db.query("DELETE from hash_files WHERE hashcode='"+name+"';");
 	            fs.unlinkSync(config.uploadDir+name,function(err){
-	                if(err)console.log("fail to del "+file);
+	                if(err)winston.info("fail to del "+file);
 	            });
 	        }
 	    });

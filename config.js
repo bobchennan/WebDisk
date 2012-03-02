@@ -5,4 +5,4 @@ exports.dbUser="root";//数据库用户名
 exports.dbPass="";//数据库密码
 exports.dbIP="127.0.0.1";//数据库地址
 exports.uploadDir=__dirname+'/tmp/';//上传目录(默认此文件夹tmp目录)
-
+exports.logFile=__dirname+'/log/'+(new Date(Date())).toDateString()+'.log';//历史记录
