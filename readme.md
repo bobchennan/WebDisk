@@ -27,15 +27,13 @@ And then you need to download the modules used in the app.You can simply cd to t
 
     git clone https://github.com/felixge/node-stack-trace.git
 
-    __(remember to rename to stack-trace)__
-
     git clone https://github.com/indexzero/node-pkginfo.git
-
-    __(remember to rename to pkginfo)__
 
     git clone https://github.com/flatiron/winston.git
 
     git clone https://github.com/sidorares/nodejs-mysql-native.git
+
+**remember when you download them all, you should delete the prefix "node"**
 
 And finish all above, you just need to run "node cnx.js" in the console.
 
