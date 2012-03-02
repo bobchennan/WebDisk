@@ -7,13 +7,38 @@ Web Disk is a *Node.JS* project that supports uploading, managing and downloadin
 ***
 > Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, >scalable network applications. Node.js uses an event-driven, non-blocking I/O model >that makes it lightweight and efficient, perfect for data-intensive real-time >applications that run across distributed devices.
 
-### How to install it
+### <center>How to install it</center>
+***
 First, you need install NodeJS environment on your computer.You can find it from [here](http://nodejs.org/#download). Then it's necessary to install MySQL.
 
 There are two databases using for application.The first is just storing the information such as password for users.The second is one database to store the data using in this app.This database just has two tables, and you can find the structure in Build folder.
 
+And then you need to download the modules used in the app.You can simply cd to the dir includes the app and run these command:
+
+    mkdir node_modules
+
+    cd node_modules
+
+    git clone https://github.com/felixge/node-formidable.git
+
+    git clone https://github.com/visionmedia/express.git
+
+    git clone https://github.com/caolan/async.git
+
+    git clone https://github.com/felixge/node-stack-trace.git
+
+    __(remember to rename to stack-trace)__
+
+    git clone https://github.com/indexzero/node-pkginfo.git
+
+    __(remember to rename to pkginfo)__
+
+    git clone https://github.com/flatiron/winston.git
+
+    git clone https://github.com/sidorares/nodejs-mysql-native.git
+
 And finish all above, you just need to run "node cnx.js" in the console.
-***
+
 Be careful about the permission.This application needs to write in one folder to save the uploading files and also needs to read the users table and update the own table.
 
 All the config things that I can remember are just in config.js. You can change it for your destination.
