@@ -133,21 +133,7 @@ app.post('/login.node',function(req,res,next){
         if(p_pass==r['pass']){
             req.session.user=p_user;
             req.session.name=r['display_name'];
-            var cnt1=0;
-            db.query("use "+config.dbNameofApp);
-            db.query("SELECT * from allow_users where user='"+p_user+"';")
-                .on("row",function(r){
-                    ++cnt1;
-                })
-                .on("end",function(){
-                    if(!cnt1){
-                        req.session.allow=false;
-                    }
-                    else{
-                        req.session.allow=true;
-	                }
-                    res.end('<SCRIPT LANGUAGE="JavaScript">alert("Login successful!");setTimeout("window.opener=null;window.location.href=\'/\'",1000);</SCRIPT>');
-                });
+            res.end('<SCRIPT LANGUAGE="JavaScript">alert("Login successful!");setTimeout("window.opener=null;window.location.href=\'/\'",1000);</SCRIPT>');
         }
         else{
             res.writeHead(200,{"Content-Type":"text/html"});
@@ -157,17 +143,32 @@ app.post('/login.node',function(req,res,next){
     result.on('end',function(){
         if(!cnt){
             res.writeHead(200,{"Content-Type":"text/html"});
-			res.end('<SCRIPT LANGUAGE="JavaScript">alert("no this user or wrong password");setTimeout("window.opener=null;window.location.href=\'/\'",1000);</SCRIPT>');
+			res.end('<SCRIPT LANGUAGE="JavaScript">alert("no this user or wrong password");setTimeout("window.opener=null;window.location.href=\'/\'",3000);</SCRIPT>');
         }
     });
 });
 
-app.post('/upload.node',function(req,res){
-    if(!req.session.allow){
-        var err=[{error:"没有权限上传"}];
-        res.send(err);
-        return;
-    }
+function auth(req,res,next){
+    var user=req.session.user;
+    var cnt=0;
+    db.query("use "+config.dbNameofApp);
+    db.query("SELECT * from allow_users where user='"+user+"';")
+        .on("row",function(r){
+            ++cnt;
+        })
+        .on("end",function(){
+            if(!cnt){
+                var tmp=({error:"没有权限上传"});
+                res.send(tmp);
+                return false;
+            }
+            else{
+                console.log('auth success');
+                next();
+	        }
+        });
+}
+app.post('/upload.node',auth,function(req,res){
     var form = new formidable.IncomingForm();
 	var res_obj=[],files=[];
     form.encoding='utf-8';

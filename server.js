@@ -9,7 +9,7 @@ var formidable=require('formidable'),
 
 db.auto_prepare=true;
 var auth=db.auth('','root');
-var DATABASE_NAME="OJ";
+var DATABASE_NAME="web_disk";
 db.query('use '+DATABASE_NAME);
 
 TEST_TMP=__dirname+'/'+'tmp';
@@ -161,10 +161,6 @@ app.post('/login.node',function(req,res,next){
     });
 });
 app.post('/upload.node',function(req,res){
-    if(!(req.session.user)){
-        res.end("404");
-        return;
-    }
 	var form = new formidable.IncomingForm();
 	var res_obj=[],files=[];
 	
