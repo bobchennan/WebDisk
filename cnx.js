@@ -7,7 +7,8 @@ var formidable=require('formidable'),
 	app=module.exports=express.createServer(),
 	crypto=require('crypto'),
 	config=require('./config'),
-	db=require("mysql-native").createTCPClient(config.dbIP);
+	db=require("mysql-native").createTCPClient(config.dbIP),
+    Redis=require('connect-redis')(express);
 
 var logger=new (winston.Logger)({
     transports:[
@@ -45,7 +46,8 @@ app.configure(function(){
 	app.use(express.bodyParser());
     app.use(express.cookieParser());
     app.use(express.session({
-        secret:'cnx'
+        secret:'cnx',
+        store:new Redis({port:config.redisPort})
     }));
 	app.use(express.methodOverride());
 	app.set('views', __dirname + '/views');

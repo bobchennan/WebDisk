@@ -13,6 +13,8 @@ First, you need install NodeJS environment on your computer.You can find it from
 
 There are two databases using for application.The first is just storing the information such as password for users.The second is one database to store the data using in this app.This database just has two tables, and you can find the structure in Build folder.
 
+Also you need to install [Redis](http://redis.io/topics/quickstart)
+
 And then you need to download the modules used in the app.You can simply cd to the dir includes the app and run these command:
 
     mkdir node_modules
@@ -32,6 +34,8 @@ And then you need to download the modules used in the app.You can simply cd to t
     git clone https://github.com/flatiron/winston.git
 
     git clone https://github.com/sidorares/nodejs-mysql-native.git
+
+    git clone https://github.com/visionmedia/connect-redis.git
 
 **remember when you download them all, you should delete the prefix "node"**
 
