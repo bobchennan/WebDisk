@@ -37,9 +37,9 @@ And then you need to download the modules used in the app.You can simply cd to t
 
     git clone https://github.com/visionmedia/connect-redis.git
 
-**remember when you download them all, you should delete the prefix "node"**
+**remember when you download them all, you should delete the prefix "node" for some folders**
 
-And finish all above, you just need to run "node cnx.js" in the console.
+And finish all above, you just need to run "node app.js" in the console.
 
 Be careful about the permission.This application needs to write in one folder to save the uploading files and also needs to read the users table and update the own table.
 
