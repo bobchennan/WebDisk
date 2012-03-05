@@ -14,7 +14,8 @@ var logger=new (winston.Logger)({
     transports:[
         new(winston.transports.Console)(),
         new(winston.transports.File)({
-            filename:config.logFile
+            filename:config.logFile,
+            handleExceptions: true 
         })
     ]
 });
@@ -58,7 +59,11 @@ app.configure(function(){
 });
 
 app.get('/',function(req,res){
-    res.render('upload.jade',{name:req.session.name});
+    if(!req.session.wrong)res.render('upload.jade',{name:req.session.name,err:0});
+    else{
+        req.session.wrong=0;
+        res.render('upload.jade',{name:req.session.name,err:1});
+    }
 });
 
 app.get('/upload.node',function(req,res){
@@ -118,7 +123,7 @@ app.get('/logout.node',function(req,res){
     res.redirect('/');
 });
 
-app.post('/login.node',function(req,res,next){
+app.post('/',function(req,res,next){
 	var p_user=req.body.user;
     var p_pass=req.body.pass;
     db.query("use "+config.dbNameofUser);
@@ -135,6 +140,7 @@ app.post('/login.node',function(req,res,next){
         if(p_pass==r['pass']){
             req.session.user=p_user;
             req.session.name=r['display_name'];
+            req.session.wrong=0;
             var cnt1=0;
             db.query("use "+config.dbNameofApp);
             db.query("SELECT * from allow_users where user='"+p_user+"';")
@@ -148,18 +154,20 @@ app.post('/login.node',function(req,res,next){
                     else{
                         req.session.allow=true;
 	                }
-                    res.end('<SCRIPT LANGUAGE="JavaScript">alert("Login successful!");setTimeout("window.opener=null;window.location.href=\'/\'",1000);</SCRIPT>');
+                    res.redirect('/');
                 });
         }
         else{
-            res.writeHead(200,{"Content-Type":"text/html"});
-            res.end('<SCRIPT LANGUAGE="JavaScript">alert("no this user or wrong password");setTimeout("window.opener=null;window.location.href=\'/\'",1000);</SCRIPT>');
+            //res.writeHead(200,{"Content-Type":"text/html"});
+            req.session.wrong=true;
+            res.redirect('/');
         }
     });
     result.on('end',function(){
         if(!cnt){
-            res.writeHead(200,{"Content-Type":"text/html"});
-			res.end('<SCRIPT LANGUAGE="JavaScript">alert("no this user or wrong password");setTimeout("window.opener=null;window.location.href=\'/\'",1000);</SCRIPT>');
+            //res.writeHead(200,{"Content-Type":"text/html"});
+            req.session.wrong=true;
+			res.redirect('/');
         }
     });
 });

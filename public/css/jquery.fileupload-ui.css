@@ -14,7 +14,39 @@
   position: relative;
   overflow: hidden;
   float: left;
-  margin-right: 4px;
+  margin-right: 10px;
+}
+.start{
+  position: relative;
+  overflow: hidden;
+  float: left;
+  margin-right: 10px;
+  width: 100px;
+  height: 28px;
+}
+#login-content #flash-block {
+margin-top: 10px;
+background: transparent none;
+color: #DD624B;
+font-size: 14px;
+font-weight: normal;
+font-family: "微软雅黑", SimSun, Tahoma, Arial, Helvetica, sans-serif;
+}
+.cancel{
+  position: relative;
+  overflow: hidden;
+  float: left;
+  margin-right: 10px;
+  width: 100px;
+  height: 28px;
+}
+.delete{
+  position: relative;
+  overflow: hidden;
+  float: left;
+  margin-right: 10px;
+  width: 100px;
+  height: 28px;
 }
 .fileinput-button input {
   position: absolute;

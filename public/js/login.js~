@@ -8,5 +8,11 @@ else{
 	$(".page-header").html("<h1>网络硬盘</h1>");
     $("#login").show();
 	$("#logout").hide();
+	easyDialog.open({
+      container:'login-content',
+      fixed:true,
+      lock:true
+    });
+    $("#flash-block").append("登录失败");
 }
 
