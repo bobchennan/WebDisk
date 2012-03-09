@@ -127,7 +127,7 @@ app.post('/',function(req,res,next){
 	var p_user=req.body.user;
     var p_pass=req.body.pass;
     db.query("use "+config.dbNameofUser);
-    var result=db.query("SELECT * from users WHERE name='"+p_user+"';");
+    var result=db.query("SELECT * from "+config.dbNameofUser+" WHERE name='"+p_user+"';");
     var cnt=0;
     result.on('row',function(r){
         ++cnt;
