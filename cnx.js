@@ -73,10 +73,10 @@ app.get('/upload.node',function(req,res){
 	db.query("SELECT * from hash_files where user='"+req.session.user+"';")
 		.on("row",function(r){
 			rest.push({
-				name:decodeURIComponent(r['file']),
-				size:r['size'],
-				url:url.parse('file.node/'+r['hashcode']).pathname,
-				delete_url:url.parse("delete.node/"+r['hashcode']).pathname,
+				name:decodeURIComponent(r.file),
+				size:r.size,
+				url:url.parse('file.node/'+r.hashcode).pathname,
+				delete_url:url.parse("delete.node/"+r.hashcode).pathname,
 				delete_type:"GET"
 			});
 		})
@@ -91,7 +91,7 @@ app.get('/delete.node/:name',function(req,res){
 	db.query("use "+config.dbNameofApp);
     db.query("SELECT * from hash_files where hashcode='"+name+"';")
 	    .on("row",function(r){
-	        if(r['user']==user){
+	        if(r.user==user){
 	            db.query("use "+config.dbNameofApp);
 	            db.query("DELETE from hash_files WHERE hashcode='"+name+"';");
 	            fs.unlinkSync(config.uploadDir+name,function(err){
@@ -109,8 +109,8 @@ app.get('/file.node/:name',function(req,res){
 	    .on("row",function(r){
 	        ++cnt;
 			res.header('Content-Type',"application/octet-stream;charset=utf-8");
-            res.header('Content-Length',r['size']);
-            res.header('Content-Disposition',"attachment;filename="+r['file']);
+            res.header('Content-Length',r.size);
+            res.header('Content-Disposition',"attachment;filename="+r.file);
             res.sendfile(config.uploadDir+name);
 	    })
 	    .on("end",function(r){
@@ -127,23 +127,23 @@ app.post('/',function(req,res,next){
 	var p_user=req.body.user;
     var p_pass=req.body.pass;
     db.query("use "+config.dbNameofUser);
-    var result=db.query("SELECT * from "+config.dbNameofUser+" WHERE name='"+p_user+"';");
+    var result=db.query("SELECT * from "+config.dbNameofUser+" WHERE name='"+escape(p_user)+"';");
     var cnt=0;
     result.on('row',function(r){
         ++cnt;
-        var iter=r['iter'];
-        var salt=r['salt'];
+        var iter=r.iter;
+        var salt=r.salt;
         for(var i=0;i<iter;i++){
             p_pass+=salt;
             p_pass=crypto.createHash("md5").update(p_pass).digest("hex");
         }
-        if(p_pass==r['pass']){
+        if(p_pass==r.pass){
             req.session.user=p_user;
-            req.session.name=r['display_name'];
+            req.session.name=r.display_name;
             req.session.wrong=0;
             var cnt1=0;
             db.query("use "+config.dbNameofApp);
-            db.query("SELECT * from allow_users where user='"+p_user+"';")
+            db.query("SELECT * from allow_users where user='"+escape(p_user)+"';")
                 .on("row",function(r){
                     ++cnt1;
                 })

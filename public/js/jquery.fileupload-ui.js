@@ -1,5 +1,5 @@
 /*
- * jQuery File Upload User Interface Plugin 6.5.2
+ * jQuery File Upload User Interface Plugin 6.6.2
  * https://github.com/blueimp/jQuery-File-Upload
  *
  * Copyright 2010, Sebastian Tschan
@@ -18,9 +18,9 @@
         // Register as an anonymous AMD module:
         define([
             'jquery',
-            './tmpl.js',
-            './load-image.js',
-            './jquery.fileupload-ip.js'
+            'tmpl',
+            'load-image',
+            './jquery.fileupload-ip'
         ], factory);
     } else {
         // Browser globals:
@@ -33,9 +33,10 @@
 }(function ($, tmpl, loadImage) {
     'use strict';
 
-    // The UI version extends the IP (image processing) version and adds
-    // complete user interface interaction:
-    $.widget('blueimpUI.fileupload', $.blueimpIP.fileupload, {
+    // The UI version extends the IP (image processing) version or the basic
+    // file upload widget and adds complete user interface interaction:
+    var parentWidget = ($.blueimpIP || $.blueimp).fileupload;
+    $.widget('blueimpUI.fileupload', parentWidget, {
 
         options: {
             // By default, files added to the widget are uploaded as soon
@@ -65,6 +66,10 @@
             // if supported by the browser. Set the following option to false
             // to always display preview images as img elements:
             previewAsCanvas: true,
+            // The ID of the upload template:
+            uploadTemplateId: 'template-upload',
+            // The ID of the download template:
+            downloadTemplateId: 'template-download',
             // The expected data type of the upload response, sets the dataType
             // option of the $.ajax upload requests:
             dataType: 'json',
@@ -81,11 +86,10 @@
                 $(this).fileupload('resize', data).done(data, function () {
                     data.files.valid = data.isValidated = that._validate(files);
                     data.context = that._renderUpload(files)
-                        .appendTo(that._files)
+                        .appendTo(options.filesContainer)
                         .data('data', data);
                     that._renderPreviews(files, data.context);
-                    // Force reflow:
-                    that._reflow = $.support.transition && data.context[0].offsetWidth;
+                    that._forceReflow(data.context);
                     that._transition(data.context).done(
                         function () {
                             if ((that._trigger('added', e, data) !== false) &&
@@ -142,9 +146,7 @@
                                 template = that._renderDownload([file])
                                     .css('height', node.height())
                                     .replaceAll(node);
-                                // Force reflow:
-                                that._reflow = $.support.transition &&
-                                    template[0].offsetWidth;
+                                that._forceReflow(template);
                                 that._transition(template).done(
                                     function () {
                                         data.context = $(this);
@@ -156,9 +158,8 @@
                     });
                 } else {
                     template = that._renderDownload(data.result)
-                        .appendTo(that._files);
-                    // Force reflow:
-                    that._reflow = $.support.transition && template[0].offsetWidth;
+                        .appendTo(that.options.filesContainer);
+                    that._forceReflow(template);
                     that._transition(template).done(
                         function () {
                             data.context = $(this);
@@ -183,9 +184,7 @@
                                     var node = $(this);
                                     template = that._renderDownload([file])
                                         .replaceAll(node);
-                                    // Force reflow:
-                                    that._reflow = $.support.transition &&
-                                        template[0].offsetWidth;
+                                    that._forceReflow(template);
                                     that._transition(template).done(
                                         function () {
                                             data.context = $(this);
@@ -206,10 +205,9 @@
                 } else if (data.errorThrown !== 'abort') {
                     that._adjustMaxNumberOfFiles(-data.files.length);
                     data.context = that._renderUpload(data.files)
-                        .appendTo(that._files)
+                        .appendTo(that.options.filesContainer)
                         .data('data', data);
-                    // Force reflow:
-                    that._reflow = $.support.transition && data.context[0].offsetWidth;
+                    that._forceReflow(data.context);
                     that._transition(data.context).done(
                         function () {
                             data.context = $(this);
@@ -353,24 +351,29 @@
         },
 
         _renderTemplate: function (func, files) {
-            return $(this.options.templateContainer).html(func({
+            if (!func) {
+                return $();
+            }
+            var result = func({
                 files: files,
                 formatFileSize: this._formatFileSize,
                 options: this.options
-            })).children();
+            });
+            if (result instanceof $) {
+                return result;
+            }
+            return $(this.options.templatesContainer).html(result).children();
         },
 
         _renderPreview: function (file, node) {
             var that = this,
                 options = this.options,
                 deferred = $.Deferred();
-            return (loadImage(
+            return ((loadImage && loadImage(
                 file,
                 function (img) {
                     node.append(img);
-                    // Force reflow:
-                    that._reflow = $.support.transition &&
-                        node[0].offsetWidth;
+                    that._forceReflow(node);
                     that._transition(node).done(function () {
                         deferred.resolveWith(node);
                     });
@@ -380,7 +383,7 @@
                     maxHeight: options.previewMaxHeight,
                     canvas: options.previewAsCanvas
                 }
-            ) || deferred.resolveWith(node)) && deferred;
+            )) || deferred.resolveWith(node)) && deferred;
         },
 
         _renderPreviews: function (files, nodes) {
@@ -447,9 +450,14 @@
             e.data.fileupload._trigger('destroy', e, {
                 context: button.closest('.template-download'),
                 url: button.attr('data-url'),
-                type: button.attr('data-type'),
+                type: button.attr('data-type') || 'DELETE',
                 dataType: e.data.fileupload.options.dataType
             });
+        },
+
+        _forceReflow: function (node) {
+            this._reflow = $.support.transition &&
+                node.length && node[0].offsetWidth;
         },
 
         _transition: function (node) {
@@ -476,7 +484,7 @@
 
         _initButtonBarEventHandlers: function () {
             var fileUploadButtonBar = this.element.find('.fileupload-buttonbar'),
-                filesList = this._files,
+                filesList = this.options.filesContainer,
                 ns = this.options.namespace;
             fileUploadButtonBar.find('.start')
                 .bind('click.' + ns, function (e) {
@@ -513,9 +521,9 @@
         },
 
         _initEventHandlers: function () {
-            $.blueimpIP.fileupload.prototype._initEventHandlers.call(this);
+            parentWidget.prototype._initEventHandlers.call(this);
             var eventData = {fileupload: this};
-            this._files
+            this.options.filesContainer
                 .delegate(
                     '.start button',
                     'click.' + this.options.namespace,
@@ -538,12 +546,13 @@
         },
 
         _destroyEventHandlers: function () {
+            var options = this.options;
             this._destroyButtonBarEventHandlers();
-            this._files
-                .undelegate('.start button', 'click.' + this.options.namespace)
-                .undelegate('.cancel button', 'click.' + this.options.namespace)
-                .undelegate('.delete button', 'click.' + this.options.namespace);
-            $.blueimpIP.fileupload.prototype._destroyEventHandlers.call(this);
+            options.filesContainer
+                .undelegate('.start button', 'click.' + options.namespace)
+                .undelegate('.cancel button', 'click.' + options.namespace)
+                .undelegate('.delete button', 'click.' + options.namespace);
+            parentWidget.prototype._destroyEventHandlers.call(this);
         },
 
         _enableFileInputButton: function () {
@@ -559,25 +568,52 @@
         },
 
         _initTemplates: function () {
-            this.options.templateContainer = document.createElement(
-                this._files.prop('nodeName')
+            var options = this.options;
+            options.templatesContainer = document.createElement(
+                options.filesContainer.prop('nodeName')
             );
-            this.options.uploadTemplate = tmpl('template-upload');
-            this.options.downloadTemplate = tmpl('template-download');
+            if (tmpl) {
+                if (options.uploadTemplateId) {
+                    options.uploadTemplate = tmpl(options.uploadTemplateId);
+                }
+                if (options.downloadTemplateId) {
+                    options.downloadTemplate = tmpl(options.downloadTemplateId);
+                }
+            }
         },
 
-        _initFiles: function () {
-            this._files = this.element.find('.files');
+        _initFilesContainer: function () {
+            var options = this.options;
+            if (options.filesContainer === undefined) {
+                options.filesContainer = this.element.find('.files');
+            } else if (!(options.filesContainer instanceof $)) {
+                options.filesContainer = $(options.filesContainer);
+            }
         },
 
-        _create: function () {
-            this._initFiles();
-            $.blueimpIP.fileupload.prototype._create.call(this);
+        _initSpecialOptions: function () {
+            parentWidget.prototype._initSpecialOptions.call(this);
+            this._initFilesContainer();
             this._initTemplates();
         },
 
+        _create: function () {
+            parentWidget.prototype._create.call(this);
+            this._refreshOptionsList.push(
+                'filesContainer',
+                'uploadTemplateId',
+                'downloadTemplateId'
+            );
+            if (!$.blueimpIP) {
+                this._processingQueue = $.Deferred().resolveWith(this).promise();
+                this.resize = function () {
+                    return this._processingQueue;
+                };
+            }
+        },
+
         enable: function () {
-            $.blueimpIP.fileupload.prototype.enable.call(this);
+            parentWidget.prototype.enable.call(this);
             this.element.find('input, button').prop('disabled', false);
             this._enableFileInputButton();
         },
@@ -585,7 +621,7 @@
         disable: function () {
             this.element.find('input, button').prop('disabled', true);
             this._disableFileInputButton();
-            $.blueimpIP.fileupload.prototype.disable.call(this);
+            parentWidget.prototype.disable.call(this);
         }
 
     });
