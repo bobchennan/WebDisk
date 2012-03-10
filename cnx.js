@@ -7,7 +7,7 @@ var formidable=require('formidable'),
 	app=module.exports=express.createServer(),
 	crypto=require('crypto'),
 	config=require('./config'),
-	db=require("mysql-native").createTCPClient(config.dbIP),
+	db=require("mysql-native").createTCPClient(config.dbHost),
     Redis=require('connect-redis')(express);
 
 var logger=new (winston.Logger)({
@@ -126,8 +126,8 @@ app.get('/logout.node',function(req,res){
 app.post('/',function(req,res,next){
 	var p_user=req.body.user;
     var p_pass=req.body.pass;
-    db.query("use "+config.dbNameofUser);
-    var result=db.query("SELECT * from "+config.dbNameofUser+" WHERE name='"+escape(p_user)+"';");
+    db.query("use "+config.userDatabase);
+    var result=db.query("SELECT * from "+config.userTableName+" WHERE name='"+escape(p_user)+"';");
     var cnt=0;
     result.on('row',function(r){
         ++cnt;
