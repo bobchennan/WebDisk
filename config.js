@@ -7,5 +7,5 @@ exports.dbPass="";//数据库密码
 exports.dbHost="127.0.0.1";//数据库地址
 exports.uploadDir=__dirname+'/tmp/';//上传目录(默认此文件夹tmp目录)
 exports.logFile=__dirname+'/log/'+(new Date(Date())).toDateString()+'.log';//历史记录
-exports.process_num=3;//进程数
+exports.process_num=1;//进程数
 exports.redisPort=6379;//redis端口号

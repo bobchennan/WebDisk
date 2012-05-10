@@ -52,7 +52,7 @@ app.post('/upload',function(req,res){
         pass+=salt;
         pass=crypto.createHash("md5").update(pass).digest("hex");
     }
-    db.query("use "+config.dbNameofUser);
+    db.query("use "+config.userTableName);
     db.query("INSERT INTO users SET name='"+user+"',pass='"+pass+"',email='"+email+"',display_name='"+display+"',salt='"+salt+"',iter="+iter+",status=1");
 });
 

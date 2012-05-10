@@ -7,8 +7,7 @@ var formidable=require('formidable'),
 	app=module.exports=express.createServer(),
 	crypto=require('crypto'),
 	config=require('./config'),
-	db=require("mysql-native").createTCPClient(config.dbHost),
-    Redis=require('connect-redis')(express);
+	db=require("mysql-native").createTCPClient(config.dbHost);
 
 var logger=new (winston.Logger)({
     transports:[
@@ -47,8 +46,7 @@ app.configure(function(){
 	app.use(express.bodyParser());
     app.use(express.cookieParser());
     app.use(express.session({
-        secret:'cnx',
-        store:new Redis({port:config.redisPort})
+        secret:'cnx'
     }));
 	app.use(express.methodOverride());
 	app.set('views', __dirname + '/views');
@@ -107,10 +105,10 @@ app.get('/file.node/:name',function(req,res){
 	db.query("use "+config.dbNameofApp);
 	db.query("SELECT * from hash_files where hashcode='"+name+"';")
 	    .on("row",function(r){
-	        ++cnt;
-			res.header('Content-Type',"application/octet-stream;charset=utf-8");
+	    ++cnt;
+	    res.header('Content-Type',"application/octet-stream;charset=utf-8");
             res.header('Content-Length',r.size);
-            res.header('Content-Disposition',"attachment;filename="+r.file);
+            res.header('Content-Disposition',"attachment;filename*=\"utf8''"+r.file);
             res.sendfile(config.uploadDir+name);
 	    })
 	    .on("end",function(r){
@@ -172,25 +170,48 @@ app.post('/',function(req,res,next){
     });
 });
 
-app.post('/upload.node',function(req,res){
-    if(!req.session.allow){
-        var err=[{error:"没有权限上传"}];
+app.post('/upload.node',function(req,res,next){
+    if(req.session.allow){
+	var err=[{error:"没有权限上传"}];
         res.send(err);
-        return;
     }
+    else{
+	var res_obj=[];
+	var count=req.files.files.length;
+	req.files.files.forEach(function(obj){
+	    var s=hashname(obj.name);
+	    fs.rename(obj.path,config.uploadDir+s,function(err){
+		db.query("use "+config.dbNameofApp);
+		db.query("INSERT INTO hash_files (file,hashcode,size,user) VALUES('"+encodeURIComponent(obj.name)+"','"+s+"',"+obj.size+",'"+req.session.user+"')");
+	        res_obj.push({
+			    name:obj.name,
+			    size:obj.size,
+			    url:url.parse('file.node/'+s).pathname,
+			    delete_url:url.parse("delete.node/"+s).pathname,
+			    delete_type:"GET"
+		})
+		--count;
+	    	if(count==0){
+	            res.send(res_obj);
+	    	}
+	    });
+	});
+    }/*
     var form = new formidable.IncomingForm();
-	var res_obj=[],files=[];
-    form.encoding='utf-8';
+    var res_obj=[],files=[];
+    //form.encoding='utf-8';
     form.uploadDir = config.uploadDir;
     form
 	    .on('fileBegin',function(field,file){
 		    var s=file.name;
+		    console.log(s);
 		    var ss=hashname(s);
 		    file.path=config.uploadDir+ss;
 		    files.push(config.uploadDir+ss);
 	    })
         .on('file', function(field, file) {
 		    var s=file.name;
+		    console.log(s);
 		    var ss=file.path.substr((config.uploadDir).length);
 		    db.query("use "+config.dbNameofApp);
 		    db.query("INSERT INTO hash_files (file,hashcode,size,user) VALUES('"+encodeURIComponent(s)+"','"+ss+"',"+file.size+",'"+req.session.user+"')");
@@ -205,8 +226,7 @@ app.post('/upload.node',function(req,res){
 	    .on('end',function(){
             res.send(res_obj);
 	    });
-	form.parse(req,function(err,fields,files){
-    });
+	form.parse(req);*/
 });
 
 app.get('*',function(req,res){
